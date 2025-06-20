@@ -95,19 +95,10 @@ app.get('/api/walkrequests/open', async (req, res) => {
   }
 });
 
-// /api/walkers/summary
+
 app.get('/api/walkers/summary', async (req, res) => {
   try {
-    // We have no ratings table in your inserts,
-    // so we'll just count completed walks per walker (role = 'walker')
-    // WalkRequests table has no walker_id field, so this is tricky.
-    // Assuming your schema does not include walker assignment and ratings,
-    // so let's just count completed walks that belong to dog owners?
-    // Instead, let's return total completed walk requests count per walker username from Users table with role=walker.
 
-    // Since you didn't provide walker_id in WalkRequests, let's simulate summary as zero ratings and completed walks = 0 for each walker
-
-    // So we query walkers list and set ratings and completed walks as 0 or null.
     const [rows] = await db.execute(`
       SELECT username AS walker_username, 0 AS total_ratings, NULL AS average_rating, 0 AS completed_walks
       FROM Users
