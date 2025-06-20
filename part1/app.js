@@ -11,11 +11,11 @@ let db;
 
 (async () => {
   try {
-    // Connect to MySQL server (no DB yet)
+
     const connection = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
-      password: ''  // change to your MySQL password
+      password: ''
     });
 
     // Create database dogwalks if not exists
