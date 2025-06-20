@@ -60,7 +60,7 @@ let db;
   }
 })();
 
-app.get('/',(req,res)=>{res.send('welcome')};
+app.get('/',(req,res)=>{res.send('welcome')});
 
 
 
