@@ -25,7 +25,6 @@ let db;
         });
 
 
-
         await db.execute(`
       INSERT IGNORE INTO Users (user_id, username, email, password_hash, role, created_at) VALUES
       (1, 'alice123', 'alice@example.com', 'hashed123', 'owner', '2025-06-20 02:14:29'),
@@ -61,9 +60,6 @@ let db;
 })();
 
 
-
-
-
 app.get('/api/dogs', async (req, res) => {
     try {
         const [rows] = await db.execute(`
@@ -82,13 +78,47 @@ app.get('/api/dogs', async (req, res) => {
 app.get('/api/walkrequests/open', async (req, res) => {
     try {
         const [rows] = await db.execute(`
-      SELECT wr.request_id, d.name AS dog_name, wr.requested_time, wr.duration_minutes, wr.location, u.username AS owner_username
-      FROM WalkRequests wr
-      JOIN Dogs d ON wr.dog_id = d.dog_id
-      JOIN Users u ON d.owner_id = u.user_id
-      WHERE wr.status = 'open'
-    `);
-        res.json(rows);
+            SELECT
+                wr.request_id,
+                d.name AS dog_name,
+                wr.requested_time,
+                wr.duration_minutes,
+                wr.location,
+                u.username AS owner_username
+            FROM
+                WalkRequests wr
+            JOIN
+                Dogs d ON wr.dog_id = d.dog_id
+            JOIN
+                Users u ON d.owner_id = u.user_id
+            WHERE
+                wr.status = 'open'
+        `);
+
+        const formattedRows = rows.map(row => {
+            let dateStringFromDb = row.requested_time;
+
+            if (dateStringFromDb instanceof Date) {
+                const d = dateStringFromDb;
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const seconds = String(d.getSeconds()).padStart(2, '0');
+                dateStringFromDb = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            const requestedTimeAsUtc = new Date(`${dateStringFromDb.replace(' ', 'T')}Z`);
+
+            return {
+                ...row,
+                requested_time: requestedTimeAsUtc.toISOString()
+            };
+        });
+
+        res.json(formattedRows);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to get open walk requests' });
@@ -98,19 +128,45 @@ app.get('/api/walkrequests/open', async (req, res) => {
 
 app.get('/api/walkers/summary', async (req, res) => {
     try {
-
         const [rows] = await db.execute(`
-      SELECT username AS walker_username, 0 AS total_ratings, NULL AS average_rating, 0 AS completed_walks
-      FROM Users
-      WHERE role = 'walker'
-    `);
+            SELECT
+                u.username AS walker_username,
+                -- Count total ratings:
+                -- Uses the 'WalkRatings' table as per your schema.
+                COALESCE(COUNT(wrg.rating_id), 0) AS total_ratings,
+                -- Calculate average rating:
+                -- Uses the 'WalkRatings' table.
+                -- CASTs the average to DECIMAL(3, 1) for formatting.
+                -- COALESCE handles cases where there are no ratings by returning NULL.
+                CAST(COALESCE(AVG(wrg.rating), NULL) AS DECIMAL(3, 1)) AS average_rating,
+                -- Count completed walks:
+                -- Joins through WalkApplications to link a walker to a request.
+                -- Counts a request as 'completed' if the application was 'accepted'
+                -- AND the corresponding walk request's status is 'completed'.
+                COALESCE(COUNT(DISTINCT CASE WHEN wa.status = 'accepted' AND wr.status = 'completed' THEN wr.request_id ELSE NULL END), 0) AS completed_walks
+            FROM
+                Users u
+            LEFT JOIN
+                WalkApplications wa ON u.user_id = wa.walker_id
+            LEFT JOIN
+                WalkRequests wr ON wa.request_id = wr.request_id
+            LEFT JOIN
+                WalkRatings wrg ON u.user_id = wrg.walker_id
+            WHERE
+                u.role = 'walker'
+            GROUP BY
+                u.user_id, u.username
+            ORDER BY
+                u.username;
+        `);
 
         res.json(rows);
     } catch (err) {
-        console.error(err);
+        console.error('Error fetching walkers summary:', err);
         res.status(500).json({ error: 'Failed to get walkers summary' });
     }
 });
+
 
 app.use(express.static(path.join(__dirname, 'public')));
 module.exports = app;
