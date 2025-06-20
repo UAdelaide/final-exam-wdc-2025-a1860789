@@ -53,9 +53,9 @@ let db;
       (5, 5, '2025-06-12 10:00:00', 20, 'Pasadena', 'cancelled', '2025-06-20 02:27:59')
     `);
 
-    console.log('Database seeded');
+
   } catch (err) {
-    console.error('DB init error:', err);
+    console.error(' error:', err);
     process.exit(1);
   }
 })();
