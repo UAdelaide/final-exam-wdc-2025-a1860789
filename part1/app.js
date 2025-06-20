@@ -18,11 +18,11 @@ let db;
       password: ''
     });
 
-    // Create database dogwalks if not exists
+
     await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
     await connection.end();
 
-    // Connect to dogwalks DB
+
     db = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
@@ -30,7 +30,7 @@ let db;
       database: 'dogwalks'
     });
 
-    // Create tables if not exist
+    
     await db.execute(`
       CREATE TABLE IF NOT EXISTS Users (
         user_id INT PRIMARY KEY,
