@@ -1,11 +1,15 @@
 var express = require('express');
-var mysql = require('mysql2/promise');
+var path = require('path');
+var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var mysql = require('mysql2/promise');
 
 var app = express();
 
 app.use(logger('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 let db;
 
@@ -30,7 +34,7 @@ let db;
       database: 'dogwalks'
     });
 
-    
+
     await db.execute(`
       CREATE TABLE IF NOT EXISTS Users (
         user_id INT PRIMARY KEY,
