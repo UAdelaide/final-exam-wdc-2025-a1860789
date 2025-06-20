@@ -1,6 +1,6 @@
 // server.js
 const app = require('./app');
-const http 
+const http = require('./app');
 
 const PORT = process.env.PORT || 8080;
 
