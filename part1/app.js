@@ -36,7 +36,7 @@ let db;
     `);
 
     await db.execute(`
-      INSERT INTO Dogs (dog_id, owner_id, name, size) VALUES
+      INSERT IGNORE INTO Dogs (dog_id, owner_id, name, size) VALUES
       (1, 1, 'Max', 'medium'),
       (2, 3, 'Bella', 'small'),
       (3, 5, 'Shikamaru', 'large'),
