@@ -27,7 +27,7 @@ let db;
 
 
     await db.execute(`
-      INSERT INTO Users (user_id, username, email, password_hash, role, created_at) VALUES
+      INSERT IGNORE INTO Users (user_id, username, email, password_hash, role, created_at) VALUES
       (1, 'alice123', 'alice@example.com', 'hashed123', 'owner', '2025-06-20 02:14:29'),
       (2, 'bobwalker', 'bob@example.com', 'hashed456', 'walker', '2025-06-20 02:14:29'),
       (3, 'carol123', 'carol@example.com', 'hashed789', 'owner', '2025-06-20 02:14:29'),
@@ -45,7 +45,7 @@ let db;
     `);
 
     await db.execute(`
-      INSERT INTO WalkRequests (request_id, dog_id, requested_time, duration_minutes, location, status, created_at) VALUES
+      INSERT IGNORE INTO WalkRequests (request_id, dog_id, requested_time, duration_minutes, location, status, created_at) VALUES
       (1, 1, '2025-06-10 08:00:00', 30, 'Parklands', 'open', '2025-06-20 02:27:59'),
       (2, 2, '2025-06-10 09:30:00', 45, 'Beachside Ave', 'accepted', '2025-06-20 02:27:59'),
       (3, 3, '2025-06-11 07:15:00', 60, 'North Adelaide', 'open', '2025-06-20 02:27:59'),
