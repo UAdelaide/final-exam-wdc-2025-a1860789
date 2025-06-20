@@ -23,9 +23,13 @@ let db;
         });
 
         await db.execute('SET FOREIGN_KEY_CHECKS = 0;');
+
+        await db.execute('TRUNCATE TABLE WalkRatings;');
+        await db.execute('TRUNCATE TABLE WalkApplications;');
         await db.execute('TRUNCATE TABLE WalkRequests;');
         await db.execute('TRUNCATE TABLE Dogs;');
         await db.execute('TRUNCATE TABLE Users;');
+
         await db.execute('SET FOREIGN_KEY_CHECKS = 1;');
 
         await db.execute(`
@@ -53,6 +57,21 @@ let db;
             (3, '2025-06-11 07:15:00', 60, 'North Adelaide', 'open', '2025-06-20 10:02:00'),
             (4, '2025-06-10 18:00:00', 30, 'Clarence Park', 'completed', '2025-06-20 10:03:00'),
             (5, '2025-06-12 10:00:00', 20, 'Pasadena', 'completed', '2025-06-20 10:04:00');
+        `);
+
+        await db.execute(`
+            INSERT INTO WalkApplications (request_id, walker_id, status, applied_at) VALUES
+            (4, 2, 'accepted', '2025-06-20 10:15:00'),
+            (5, 4, 'accepted', '2025-06-20 10:16:00'),
+            (2, 2, 'accepted', '2025-06-20 10:05:00'),
+            (1, 4, 'pending', '2025-06-20 10:20:00'),
+            (3, 2, 'pending', '2025-06-21 07:00:00');
+        `);
+
+        await db.execute(`
+            INSERT INTO WalkRatings (request_id, walker_id, owner_id, rating, comments, rated_at) VALUES
+            (4, 2, 1, 5, 'Kiba had a fantastic time with Bob!', '2025-06-20 18:30:00'),
+            (5, 4, 3, 4, 'Akamaru was well looked after by Naruto.', '2025-06-20 11:00:00');
         `);
 
     } catch (err) {
