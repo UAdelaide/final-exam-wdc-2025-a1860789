@@ -56,12 +56,12 @@ let db;
 
   } catch (err) {
     console.error('Error:', err);
-    process.exit(1);
+
   }
 })();
 
 
-// Routes
+
 
 // /api/dogs
 app.get('/api/dogs', async (req, res) => {
