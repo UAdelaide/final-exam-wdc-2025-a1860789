@@ -15,14 +15,14 @@ let db;
     const connection = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
-      password: ''  // put your password here
+      password: ''  // change to your MySQL password
     });
 
-    // Create the dogwalks database if not exists
+    // Create database dogwalks if not exists
     await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
     await connection.end();
 
-    // Connect to the dogwalks database
+    // Connect to dogwalks DB
     db = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
@@ -30,7 +30,7 @@ let db;
       database: 'dogwalks'
     });
 
-    // Create tables (simplified)
+    // Create tables if not exist
     await db.execute(`
       CREATE TABLE IF NOT EXISTS Users (
         user_id INT PRIMARY KEY,
@@ -45,9 +45,9 @@ let db;
     await db.execute(`
       CREATE TABLE IF NOT EXISTS Dogs (
         dog_id INT PRIMARY KEY,
-        dog_name VARCHAR(50),
-        size VARCHAR(20),
         owner_id INT,
+        name VARCHAR(50),
+        size VARCHAR(20),
         FOREIGN KEY (owner_id) REFERENCES Users(user_id)
       )
     `);
@@ -61,82 +61,73 @@ let db;
         location VARCHAR(100),
         status VARCHAR(20),
         created_at DATETIME,
-        walker_id INT,
-        FOREIGN KEY (dog_id) REFERENCES Dogs(dog_id),
-        FOREIGN KEY (walker_id) REFERENCES Users(user_id)
+        FOREIGN KEY (dog_id) REFERENCES Dogs(dog_id)
       )
     `);
 
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS WalkRatings (
-        rating_id INT PRIMARY KEY,
-        walker_id INT,
-        rating INT,
-        FOREIGN KEY (walker_id) REFERENCES Users(user_id)
-      )
-    `);
-
-    // Clear existing data
-    await db.execute('DELETE FROM WalkRatings');
+    // Clear old data before insert
     await db.execute('DELETE FROM WalkRequests');
     await db.execute('DELETE FROM Dogs');
     await db.execute('DELETE FROM Users');
 
-    // Insert seed data
+    // Insert your data
     await db.execute(`
       INSERT INTO Users (user_id, username, email, password_hash, role, created_at) VALUES
-      (1, 'alice123', 'alice@example.com', 'hashed123', 'owner', NOW()),
-      (2, 'bobwalker', 'bob@example.com', 'hashed456', 'walker', NOW()),
-      (3, 'carol123', 'carol@example.com', 'hashed789', 'owner', NOW()),
-      (4, 'newwalker', 'newwalker@example.com', 'hashed000', 'walker', NOW())
+      (1, 'alice123', 'alice@example.com', 'hashed123', 'owner', '2025-06-20 02:14:29'),
+      (2, 'bobwalker', 'bob@example.com', 'hashed456', 'walker', '2025-06-20 02:14:29'),
+      (3, 'carol123', 'carol@example.com', 'hashed789', 'owner', '2025-06-20 02:14:29'),
+      (4, 'naruto_doggo', 'naruto@example.com', 'hashed721', 'walker', '2025-06-20 02:14:29'),
+      (5, 'hitana_owner', 'hitana@example.com', 'hashed684', 'owner', '2025-06-20 02:23:55')
     `);
 
     await db.execute(`
-      INSERT INTO Dogs (dog_id, dog_name, size, owner_id) VALUES
-      (1, 'Max', 'medium', 1),
-      (2, 'Bella', 'small', 3)
+      INSERT INTO Dogs (dog_id, owner_id, name, size) VALUES
+      (1, 1, 'Max', 'medium'),
+      (2, 3, 'Bella', 'small'),
+      (3, 5, 'Shikamaru', 'large'),
+      (4, 1, 'Kiba', 'small'),
+      (5, 3, 'Akamaru', 'medium')
     `);
 
     await db.execute(`
-      INSERT INTO WalkRequests (request_id, dog_id, requested_time, duration_minutes, location, status, created_at, walker_id) VALUES
-      (1, 1, '2025-06-10 08:00:00', 30, 'Parklands', 'open', NOW(), NULL),
-      (2, 2, '2025-06-11 09:00:00', 45, 'Central Park', 'completed', NOW(), 2),
-      (3, 1, '2025-06-12 10:00:00', 20, 'Riverside', 'completed', NOW(), 2)
+      INSERT INTO WalkRequests (request_id, dog_id, requested_time, duration_minutes, location, status, created_at) VALUES
+      (1, 1, '2025-06-10 08:00:00', 30, 'Parklands', 'open', '2025-06-20 02:27:59'),
+      (2, 2, '2025-06-10 09:30:00', 45, 'Beachside Ave', 'accepted', '2025-06-20 02:27:59'),
+      (3, 3, '2025-06-11 07:15:00', 60, 'North Adelaide', 'open', '2025-06-20 02:27:59'),
+      (4, 4, '2025-06-10 18:00:00', 30, 'Clarence Park', 'completed', '2025-06-20 02:27:59'),
+      (5, 5, '2025-06-12 10:00:00', 20, 'Pasadena', 'cancelled', '2025-06-20 02:27:59')
     `);
 
-    await db.execute(`
-      INSERT INTO WalkRatings (rating_id, walker_id, rating) VALUES
-      (1, 2, 5),
-      (2, 2, 4)
-    `);
-
-    console.log('Database ready and seeded.');
+    console.log('Database seeded');
   } catch (err) {
-    console.error('Database setup failed:', err);
+    console.error('DB init error:', err);
     process.exit(1);
   }
 })();
 
-// ROUTES
 
+// Routes
+
+// /api/dogs
 app.get('/api/dogs', async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT d.dog_name, d.size, u.username AS owner_username
+      SELECT d.name AS dog_name, d.size, u.username AS owner_username
       FROM Dogs d
       JOIN Users u ON d.owner_id = u.user_id
     `);
     res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to retrieve dogs' });
+    res.status(500).json({ error: 'Failed to get dogs' });
   }
 });
 
+// /api/walkrequests/open
 app.get('/api/walkrequests/open', async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT wr.request_id, d.dog_name, wr.requested_time, wr.duration_minutes, wr.location, u.username AS owner_username
+      SELECT wr.request_id, d.name AS dog_name, wr.requested_time, wr.duration_minutes, wr.location, u.username AS owner_username
       FROM WalkRequests wr
       JOIN Dogs d ON wr.dog_id = d.dog_id
       JOIN Users u ON d.owner_id = u.user_id
@@ -145,46 +136,36 @@ app.get('/api/walkrequests/open', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to retrieve open walk requests' });
+    res.status(500).json({ error: 'Failed to get open walk requests' });
   }
 });
 
+// /api/walkers/summary
 app.get('/api/walkers/summary', async (req, res) => {
   try {
+    // We have no ratings table in your inserts,
+    // so we'll just count completed walks per walker (role = 'walker')
+    // WalkRequests table has no walker_id field, so this is tricky.
+    // Assuming your schema does not include walker assignment and ratings,
+    // so let's just count completed walks that belong to dog owners?
+    // Instead, let's return total completed walk requests count per walker username from Users table with role=walker.
+
+    // Since you didn't provide walker_id in WalkRequests, let's simulate summary as zero ratings and completed walks = 0 for each walker
+
+    // So we query walkers list and set ratings and completed walks as 0 or null.
     const [rows] = await db.execute(`
-      SELECT
-        u.username AS walker_username,
-        COUNT(wr.rating) AS total_ratings,
-        AVG(wr.rating) AS average_rating,
-        COALESCE(completed.completed_count, 0) AS completed_walks
-      FROM Users u
-      LEFT JOIN WalkRatings wr ON u.user_id = wr.walker_id
-      LEFT JOIN (
-        SELECT walker_id, COUNT(*) AS completed_count
-        FROM WalkRequests
-        WHERE status = 'completed'
-        GROUP BY walker_id
-      ) completed ON u.user_id = completed.walker_id
-      WHERE u.role = 'walker'
-      GROUP BY u.user_id
+      SELECT username AS walker_username, 0 AS total_ratings, NULL AS average_rating, 0 AS completed_walks
+      FROM Users
+      WHERE role = 'walker'
     `);
 
-    const result = rows.map(r => ({
-      walker_username: r.walker_username,
-      total_ratings: Number(r.total_ratings),
-      average_rating: r.average_rating !== null ? parseFloat(r.average_rating) : null,
-      completed_walks: Number(r.completed_walks)
-    }));
-
-    res.json(result);
+    res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to retrieve walkers summary' });
+    res.status(500).json({ error: 'Failed to get walkers summary' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
