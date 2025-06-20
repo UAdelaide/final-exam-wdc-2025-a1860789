@@ -55,7 +55,7 @@ let db;
 
 
   } catch (err) {
-    console.error(' error:', err);
+    console.error('Error:', err);
     process.exit(1);
   }
 })();
