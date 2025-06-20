@@ -25,46 +25,7 @@ let db;
     });
 
 
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS Users (
-        user_id INT PRIMARY KEY,
-        username VARCHAR(50),
-        email VARCHAR(100),
-        password_hash VARCHAR(255),
-        role VARCHAR(20),
-        created_at DATETIME
-      )
-    `);
 
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS Dogs (
-        dog_id INT PRIMARY KEY,
-        owner_id INT,
-        name VARCHAR(50),
-        size VARCHAR(20),
-        FOREIGN KEY (owner_id) REFERENCES Users(user_id)
-      )
-    `);
-
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS WalkRequests (
-        request_id INT PRIMARY KEY,
-        dog_id INT,
-        requested_time DATETIME,
-        duration_minutes INT,
-        location VARCHAR(100),
-        status VARCHAR(20),
-        created_at DATETIME,
-        FOREIGN KEY (dog_id) REFERENCES Dogs(dog_id)
-      )
-    `);
-
-    // Clear old data before insert
-    await db.execute('DELETE FROM WalkRequests');
-    await db.execute('DELETE FROM Dogs');
-    await db.execute('DELETE FROM Users');
-
-    // Insert your data
     await db.execute(`
       INSERT INTO Users (user_id, username, email, password_hash, role, created_at) VALUES
       (1, 'alice123', 'alice@example.com', 'hashed123', 'owner', '2025-06-20 02:14:29'),
