@@ -74,11 +74,11 @@ app.get('/api/dogs', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: '  dogs' });
+    res.status(500).json({ error: ' failed to get a dogs' });
   }
 });
 
-// /api/walkrequests/open
+
 app.get('/api/walkrequests/open', async (req, res) => {
   try {
     const [rows] = await db.execute(`
