@@ -16,23 +16,12 @@ let db;
 (async () => {
   try {
 
-    const connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: ''
-      database: 'DogWalkService'
-    });
-
-
-    await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
-    await connection.end();
-
 
     db = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
       password: '',
-      database: 'dogwalks'
+      database: 'dogwalk'
     });
 
 
