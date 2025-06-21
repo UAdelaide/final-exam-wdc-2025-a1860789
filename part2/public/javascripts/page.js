@@ -7,8 +7,8 @@ var search = null;
 function showAsk() {
     var main = document.getElementById("main");
     var ask = document.getElementById("ask");
-    main.style.display = "none";
-    ask.style.display = "block";
+    if (main) main.style.display = "none";
+    if (ask) ask.style.display = "block";
 }
 
 /*
@@ -18,19 +18,23 @@ function showAsk() {
 function showMain() {
     var main = document.getElementById("main");
     var ask = document.getElementById("ask");
-    ask.style.display = "none";
-    main.style.display = "block";
+    if (ask) ask.style.display = "none";
+    if (main) main.style.display = "block";
 
-    document.getElementById('post-title').value = '';
-    document.getElementById('post-content').value = '';
-    document.getElementById('post-tags').value = '';
+    // Check if elements exist before setting value
+    const postTitle = document.getElementById('post-title');
+    const postContent = document.getElementById('post-content');
+    const postTags = document.getElementById('post-tags');
+
+    if (postTitle) postTitle.value = '';
+    if (postContent) postContent.value = '';
+    if (postTags) postTags.value = '';
 }
 
 /*
  * Creates a new question/post & send it to the server, before triggering an update for the main part of the page.
  */
 function createPost() {
-
     search = null;
 
     let post = {
@@ -40,35 +44,37 @@ function createPost() {
         upvotes: 0
     };
 
-    // Create AJAX Request
-    var xmlhttp = new XMLHttpRequest();
-
-    // Define function to run on response
-    xmlhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // Update the page on success
+    // Using fetch API for consistency and modern approach
+    fetch("/addpost", {
+        method: "POST",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(post)
+    })
+    .then(response => {
+        if (response.ok) {
             loadPosts();
             showMain();
+        } else {
+            console.error('Failed to create post:', response.statusText);
+            // Optionally, handle error display
         }
-    };
-
-    // Open connection to server & send the post data using a POST request
-    xmlhttp.open("POST", "/addpost", true);
-    xmlhttp.setRequestHeader("Content-type", "application/json");
-    xmlhttp.send(JSON.stringify(post));
-
+    })
+    .catch(error => {
+        console.error('Error creating post:', error);
+        // Optionally, handle network error
+    });
 }
 
 /*
  * Updates the search term then reloads the posts shown
  */
 function searchPosts() {
-
-    search = document.getElementById('post-search').value.toUpperCase();
-    updatePosts();
-
+    const postSearch = document.getElementById('post-search');
+    if (postSearch) {
+        search = postSearch.value.toUpperCase();
+        updatePosts();
+    }
 }
-
 
 /*
  * Reloads the posts shown on the page
@@ -76,13 +82,14 @@ function searchPosts() {
  * If a search term is being used
  */
 function updatePosts() {
+    const postList = document.getElementById('post-list');
+    if (!postList) return; // Exit if post-list element doesn't exist
 
     // Reset the page
-    document.getElementById('post-list').innerHTML = '';
+    postList.innerHTML = '';
 
     // Iterate over each post in the array by index
     for (let i = 0; i < posts.length; i++) {
-
         let post = posts[i];
 
         // Check if a search term used.
@@ -112,15 +119,14 @@ function updatePosts() {
             </div>
             <div class="content">
                 <h3><a href="#">${post.title}</a></h3>
-                <i>By ${post.author}</i>
+                <i>By ${post.author || 'Anonymous'}</i>
                 <p>${post.content}</p>
                 ${tagSpans}<span class="date">${new Date(post.timestamp).toLocaleString()}</span>
             </div>
         `;
 
         // Append the question/post to the page
-        document.getElementById("post-list").appendChild(postDiv);
-
+        postList.appendChild(postDiv);
     }
 }
 
@@ -128,84 +134,117 @@ function updatePosts() {
  * Loads posts from the server
  * - Send an AJAX GET request to the server
  * - JSON Array of posts sent in response
- * - Update the
+ * - Update the page
  */
 function loadPosts() {
-
-    // Create AJAX Request
-    var xmlhttp = new XMLHttpRequest();
-
-    // Define function to run on response
-    xmlhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // Parse the JSON and update the posts array
-            posts = JSON.parse(this.responseText);
-            // Call the updatePosts function to update the page
+    fetch("/posts")
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load posts');
+            return response.json();
+        })
+        .then(data => {
+            posts = data;
             updatePosts();
-        }
-    };
-
-    // Open connection to server
-    xmlhttp.open("GET", "/posts", true);
-
-    // Send request
-    xmlhttp.send();
-
+        })
+        .catch(error => {
+            console.error('Error loading posts:', error);
+            // Optionally, display error to user
+        });
 }
-
 
 /*
  * Increase the votes for a given post, then update the page
  */
 function upvote(index) {
-    posts[index].upvotes++;
-    updatePosts();
+    if (posts[index]) {
+        posts[index].upvotes++;
+        updatePosts();
+    }
 }
 
 /*
  * Decrease the votes for a given post, then update the page
  */
 function downvote(index) {
-    posts[index].upvotes--;
-    updatePosts();
+    if (posts[index]) {
+        posts[index].upvotes--;
+        updatePosts();
+    }
 }
 
-function login() {
+// Corrected login function to use fetch API and error message div
+async function login() {
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorMessageDiv = document.getElementById('error-message');
+
+    // Clear previous error message
+    if (errorMessageDiv) errorMessageDiv.textContent = '';
+
+    if (!usernameInput || !passwordInput) {
+        console.error("Login form elements not found.");
+        if (errorMessageDiv) errorMessageDiv.textContent = "Form elements missing.";
+        return;
+    }
 
     let credentials = {
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value
+        username: usernameInput.value,
+        password: passwordInput.value
     };
 
-    // Create AJAX Request
-    var xmlhttp = new XMLHttpRequest();
+    try {
+        const response = await fetch("/login", { // Directs to the app.js login route
+            method: "POST",
+            headers: { "Content-type": "application/json" },
+            body: JSON.stringify(credentials)
+        });
 
-    // Define function to run on response
-    xmlhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
+        // For successful login, app.js performs a redirect.
+        // We just need to check if the request was successful and handle potential redirects.
+        // If app.js redirects, the browser handles it automatically.
+        // If app.js returns JSON for errors, we process that.
 
-            alert("Login successful!");
-            window.location.reload(); // This will refresh the page, which is typically enough after login for session to apply.
-            // You might want to replace this with a more specific redirect later.
-        } else if (this.readyState == 4 && this.status >= 400) {
-            alert("Login failed: Invalid username or password.");
+        if (response.redirected) {
+            // If the server sent a redirect (e.g., to dashboard), let the browser follow
+            window.location.href = response.url;
+        } else {
+            // If the server did not redirect, it likely sent an error JSON
+            const result = await response.json(); // Assuming error responses are JSON
+            if (errorMessageDiv) {
+                errorMessageDiv.textContent = result.error || 'Login failed. Please try again.';
+            }
         }
-    };
-
-    // Open connection to server & send the credentials using a POST request
-    xmlhttp.open("POST", "/login", true); // Directs to the app.js login route
-    xmlhttp.setRequestHeader("Content-type", "application/json");
-    xmlhttp.send(JSON.stringify(credentials));
-
+    } catch (error) {
+        console.error('Error during login:', error);
+        if (errorMessageDiv) {
+            errorMessageDiv.textContent = 'An unexpected error occurred. Please try again.';
+        }
+    }
 }
 
-function logout() {
 
-    // Create AJAX Request
-    var xmlhttp = new XMLHttpRequest();
+// Corrected logout function to send POST and handle JSON response
+async function logout() {
+    try {
+        const response = await fetch('/logout', {
+            method: 'POST', // Changed from GET to POST
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-    // The app.js /logout route is a GET request, so we should use GET here.
-    xmlhttp.open("GET", "/logout", true);
-    xmlhttp.send();
+        const result = await response.json(); // Expecting JSON response from app.js
 
+        if (response.ok) {
+            // Redirect to the login page on successful logout
+            window.location.href = '/';
+        } else {
+            // Log or display an error if logout fails
+            console.error('Logout failed:', result.message || response.statusText);
+            alert('Logout failed: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error during logout fetch:', error);
+        alert('An error occurred during logout. Please check your network connection.');
+    }
 }

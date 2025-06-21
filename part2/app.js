@@ -74,15 +74,16 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// LOGOUT ROUTE
-app.get('/logout', (req, res) => {
+// LOGOUT ROUTE (CHANGED TO POST AND SENDS JSON RESPONSE)
+app.post('/logout', (req, res) => { // Changed from app.get to app.post
     req.session.destroy(err => {
         if (err) {
             console.error('Error destroying session:', err);
-            return res.redirect('/?error=' + encodeURIComponent('Failed to log out.'));
+            // Send a 500 error response if session destruction fails
+            return res.status(500).json({ message: 'Could not log out due to server error.' });
         }
-        res.clearCookie('connect.sid');
-        res.redirect('/?message=' + encodeURIComponent('You have been logged out.'));
+        // The client-side page.js will handle the redirect after this successful JSON response
+        res.status(200).json({ message: 'Logged out successfully.' });
     });
 });
 
@@ -98,4 +99,4 @@ app.use('/api/walks', walkRoutes);
 app.use('/api/users', userRoutes);
 
 
-module.exports = app; 
+module.exports = app;
